@@ -1,0 +1,92 @@
+<html>
+<head>
+<script type="text/javascript" src="smoothie.js.gz"></script>
+<script type="text/javascript" src="jquery.min.js.gz"></script>
+</head>
+<body>
+
+	<h2>Accelerometer Realtime Data</h2>
+	<table>
+	<td>
+	<canvas id="accelerationCanvas" width="600" height="200"></canvas>
+	</td>
+	<td>
+	<p style="color:red">x</p>
+	<p style="color:green">y</p>
+	<p style="color:blue">z</p>
+	</td>
+	</table>
+
+	<h2>Magnetometer Realtime Data</h2>
+	<table>
+		<td>
+			<canvas id="magnetometerCanvas" width="600" height="200"></canvas>
+		</td>
+		<td>
+			<p style="color:red">x</p>
+			<p style="color:green">y</p>
+			<p style="color:blue">z</p>
+		</td>
+	</table>
+	</br>
+	
+	<p>
+		Update Interval in milliseconds:
+		<input id="updateInterval" type="text" value="" style="text-align: right; width:5em">
+	</p>
+
+<script>
+	var updateInterval = 300;
+	$("#updateInterval").val(updateInterval).change(function ()
+	{
+		var v = $(this).val();
+		if (v && !isNaN(+v)) 
+		{
+		  	updateInterval = +v;
+		    if (updateInterval < 1) {
+				updateInterval = 1;
+			}
+			$(this).val("" + updateInterval);
+		}
+	});
+
+	var accelerationChart = new SmoothieChart({scaleSmoothing:0.01,maxValue:2000,minValue:-2000});
+	var magnetometerChart = new SmoothieChart({scaleSmoothing:0.01,maxValue:800,minValue:-3100});
+	accelerationChart.streamTo(document.getElementById("accelerationCanvas"), 10);
+	magnetometerChart.streamTo(document.getElementById("magnetometerCanvas"), 10);
+
+	// Create the series for storing data.
+	var lineAccelerationX = new TimeSeries();
+	var lineAccelerationY = new TimeSeries();
+	var lineAccelerationZ = new TimeSeries();
+	var lineMagnetometerX = new TimeSeries();
+	var lineMagnetometerY = new TimeSeries();
+	var lineMagnetometerZ = new TimeSeries();
+  
+	// Get data using CGI
+	var timer_callback = function()
+	{ 
+	   clearInterval(interval);
+	   $.getJSON("sensordata.cgx", function(sensordata)
+	   { 
+		    lineAccelerationX.append(new Date().getTime(), sensordata.accelerationX);		
+			lineAccelerationY.append(new Date().getTime(), sensordata.accelerationY);    
+			lineAccelerationZ.append(new Date().getTime(), sensordata.accelerationZ);    
+	        lineMagnetometerX.append(new Date().getTime(), sensordata.magnetometerX);		
+			lineMagnetometerY.append(new Date().getTime(), sensordata.magnetometerY);    
+			lineMagnetometerZ.append(new Date().getTime(), sensordata.magnetometerZ);    
+			
+		});
+		interval = setInterval(timer_callback, updateInterval);
+	};
+	var interval = setInterval(timer_callback, updateInterval);
+   
+	// Add data as series to chart.
+	accelerationChart.addTimeSeries(lineAccelerationX, { strokeStyle:'rgb(0, 255, 0)', fillStyle:'rgba(0, 255, 0, 0.4)', lineWidth:2 });
+	accelerationChart.addTimeSeries(lineAccelerationY, { strokeStyle:'rgb(0, 0, 255)', fillStyle:'rgba(0, 0, 255, 0.4)', lineWidth:2 });
+	accelerationChart.addTimeSeries(lineAccelerationZ, { strokeStyle:'rgb(255, 0, 0)', fillStyle:'rgba(255, 0, 0, 0.4)', lineWidth:2 });
+	magnetometerChart.addTimeSeries(lineMagnetometerX, { strokeStyle:'rgb(55, 255, 0)', fillStyle:'rgba(55, 255, 0, 0.4)', lineWidth:2 });
+	magnetometerChart.addTimeSeries(lineMagnetometerY, { strokeStyle:'rgb(0, 55, 255)', fillStyle:'rgba(0, 55, 255, 0.4)', lineWidth:2 });
+	magnetometerChart.addTimeSeries(lineMagnetometerZ, { strokeStyle:'rgb(255, 0, 55)', fillStyle:'rgba(255, 0, 55, 0.4)', lineWidth:2 });
+</script>
+</body>
